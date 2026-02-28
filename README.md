@@ -63,8 +63,8 @@ graph TB
     Actor -->|Tell Session| Session
     Session -->|托管| SA
     Map -->|sessionId -> sessionInfo| Info
-    RL -->|TellSelf []byte| SA
-    SA -->|OnMessage ctx, message| Biz[SessionActor 业务]
+    RL -->|TellSelf data| SA
+    SA -->|OnMessage ctx message| Biz[SessionActor 业务]
 ```
 
 - **Nexus**：一个 actor + operator。作为 Actor 接收 `Session` 并维护 `sessions` 映射；作为 operator 对外提供 `Close`、`Send`、`Broadcast`，内部用 `sessionLock` 保证并发安全。
