@@ -1,0 +1,4 @@
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/kercylan98/vivid v0.1.4 h1:1L1oBHsgIto+nrnCv9865g1R2DU2AXd49T0E1FGrnxU=
+github.com/kercylan98/vivid v0.1.4/go.mod h1:N/I88RCpIT44uzzEqZBDOSxjnRCAoLJDEMs9h33H/wk=
