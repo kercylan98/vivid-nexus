@@ -13,6 +13,14 @@ type operator struct {
 	vivid.ActorContext
 }
 
+// TakeoverSession 用于接管一个已存在的 Session，并存入 operator 的会话管理中。
+// 如果 sessionId 已存在，原有会话会被关闭并替换为新会话。
+//
+// 也可以直接通过将 Session Tell 到 Nexus Actor 的 ref 来达到等效的作用。
+func (o *operator) TakeoverSession(session Session) {
+	o.operator.actor.TellSelf(session)
+}
+
 // Close 关闭指定 ID 的会话。
 //
 // 若该 sessionId 存在托管会话，则从映射中移除并 Kill 对应 sessionActor（底层 Session 由 session 侧关闭）；
