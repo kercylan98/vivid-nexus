@@ -14,12 +14,11 @@ var (
 	_ vivid.PrelaunchActor = (*sessionActor)(nil)
 )
 
-// SessionActor 由业务实现的会话逻辑接口，嵌入 vivid.Actor。
+// SessionActor 由业务实现的会话逻辑接口，仅需实现连接/断开/收包三个回调。
 //
 // 所有回调均在 sessionActor 的邮箱线程中串行执行，可安全使用 ctx 进行 Send、Close、Tell 等。
 // message 在 OnMessage 中的生命周期仅在本次调用内有效，如需异步或长期持有须拷贝。
 type SessionActor interface {
-	vivid.Actor
 	// OnConnected 在会话对应 Actor 启动后、读循环启动前调用，表示连接已就绪。
 	OnConnected(ctx SessionContext)
 	// OnDisconnected 在会话即将关闭时调用（Kill 处理中），之后底层 Session 会被 Close。
@@ -154,17 +153,14 @@ func (a *sessionActor) readLoop(ctx vivid.ActorContext) {
 			ctx.Logger().Error(reason, log.Any("err", err))
 		}
 
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				reason = "session read EOF"
-				ctx.Logger().Debug(reason, log.String("id", a.context.GetSessionId()))
-			} else {
-				reason = "session read failed, err: " + err.Error()
-				ctx.Logger().Error(reason, log.String("id", a.context.GetSessionId()))
-			}
+		if err != nil && !errors.Is(err, io.EOF) {
+			reason = "session read failed, err: " + err.Error()
+			ctx.Logger().Error(reason, log.String("id", a.context.GetSessionId()))
 		}
 
-		ctx.Kill(ctx.Ref(), false, reason)
+		if !a.closed.Load() {
+			ctx.Kill(ctx.Ref(), false, reason)
+		}
 	}()
 
 	for !a.closed.Load() {

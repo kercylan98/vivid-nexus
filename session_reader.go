@@ -101,12 +101,6 @@ func (r *defaultSessionReader) Read() (n int, data []byte, err error) {
 	if n > 0 {
 		data = r.buf[:n:n]
 	}
-	if err != nil && err != io.EOF {
-		return n, data, err
-	}
-	if err == io.EOF {
-		r.pendingErr = io.EOF
-		return n, data, nil
-	}
-	return n, data, nil
+
+	return n, data, err
 }

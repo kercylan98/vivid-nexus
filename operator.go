@@ -9,8 +9,8 @@ import "github.com/kercylan98/vivid"
 type SendErrorHandler = func(sessionId string, sessionContext SessionContext, err error) (abort bool)
 
 type operator struct {
-	*actor
-	vivid.ActorContext
+	actor        *Actor
+	actorContext vivid.ActorContext
 }
 
 // TakeoverSession 用于接管一个已存在的 Session，并存入 operator 的会话管理中。
@@ -18,20 +18,19 @@ type operator struct {
 //
 // 也可以直接通过将 Session Tell 到 Nexus Actor 的 ref 来达到等效的作用。
 func (o *operator) TakeoverSession(session Session) {
-	o.operator.actor.TellSelf(session)
+	o.actorContext.TellSelf(session)
 }
 
 // Close 关闭指定 ID 的会话。
 //
-// 若该 sessionId 存在托管会话，则从映射中移除并 Kill 对应 sessionActor（底层 Session 由 session 侧关闭）；
+// 若该 sessionId 存在托管会话，则 Kill 对应 sessionActor（映射在 OnKilled 时移除，底层 Session 由 session 侧关闭）；
 // 若不存在则无操作，可安全重复调用。并发安全。
 func (o *operator) Close(sessionId string) {
-	o.sessionLock.Lock()
-	defer o.sessionLock.Unlock()
+	o.actor.sessionLock.Lock()
+	defer o.actor.sessionLock.Unlock()
 
-	if session, ok := o.sessions[sessionId]; ok {
-		delete(o.sessions, sessionId)
-		o.ActorContext.Kill(session.ref, false, "close session")
+	if session, ok := o.actor.sessions[sessionId]; ok {
+		o.actorContext.Kill(session.ref, false, "close session")
 	}
 }
 
@@ -44,10 +43,10 @@ func (o *operator) Send(sessionId string, message []byte) error {
 		return nil
 	}
 
-	o.sessionLock.RLock()
-	defer o.sessionLock.RUnlock()
+	o.actor.sessionLock.RLock()
+	defer o.actor.sessionLock.RUnlock()
 
-	if info, ok := o.sessions[sessionId]; ok {
+	if info, ok := o.actor.sessions[sessionId]; ok {
 		info.writeLock.Lock()
 		defer info.writeLock.Unlock()
 		_, err := info.Session.Write(message)
@@ -88,11 +87,11 @@ func (o *operator) SendTo(sessionIds []string, message []byte, errorHandler ...S
 // 先复制当前 sessions 的 key 列表再逐条 Send，避免持锁过久。若提供 errorHandler，
 // 则任一会话发送失败时调用 handler；若某次 handler 返回 true 则中止后续发送。
 func (o *operator) Broadcast(message []byte, errorHandler ...SendErrorHandler) {
-	var sessionIds = make([]string, 0, len(o.sessions))
-	o.sessionLock.RLock()
-	for sessionId := range o.sessions {
+	var sessionIds = make([]string, 0, len(o.actor.sessions))
+	o.actor.sessionLock.RLock()
+	for sessionId := range o.actor.sessions {
 		sessionIds = append(sessionIds, sessionId)
 	}
-	o.sessionLock.RUnlock()
+	o.actor.sessionLock.RUnlock()
 	o.SendTo(sessionIds, message, errorHandler...)
 }
