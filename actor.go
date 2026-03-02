@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	_ vivid.Actor = (*Actor)(nil)
-	_ Nexus       = (*Actor)(nil)
+	_ vivid.Actor            = (*Actor)(nil)
+	_ vivid.FixedOptionActor = (*Actor)(nil)
+	_ Nexus                  = (*Actor)(nil)
 )
 
 // New 构造 Nexus 实例，用于集中托管会话
@@ -50,6 +51,15 @@ type Actor struct {
 
 func (n *Actor) Actor() vivid.Actor {
 	return n
+}
+
+func (n *Actor) FixedOptions() []vivid.ActorOption {
+	return []vivid.ActorOption{
+		// 写定监管策略，发生异常时直接杀死会话，避免会话重启导致无效的连接复用
+		vivid.WithActorSupervisionStrategy(vivid.OneForOneStrategy(vivid.SupervisionStrategyDecisionMakerFN(func(ctx vivid.SupervisionContext) (decision vivid.SupervisionDecision, reason string) {
+			return vivid.SupervisionDecisionStop, "accident session, kill it"
+		}))),
+	}
 }
 
 func (n *Actor) OnReceive(ctx vivid.ActorContext) {
