@@ -53,7 +53,7 @@ func (n *Actor) Actor() vivid.Actor {
 	return n
 }
 
-func (n *Actor) FixedOptions() []vivid.ActorOption {
+func (n *Actor) FixedOptions(ctx vivid.FixedOptionContext) []vivid.ActorOption {
 	return []vivid.ActorOption{
 		// 写定监管策略，发生异常时直接杀死会话，避免会话重启导致无效的连接复用
 		vivid.WithActorSupervisionStrategy(vivid.OneForOneStrategy(vivid.SupervisionStrategyDecisionMakerFN(func(ctx vivid.SupervisionContext) (decision vivid.SupervisionDecision, reason string) {
