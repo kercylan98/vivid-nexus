@@ -26,7 +26,7 @@ func main() {
 	actorSystem := initActorSystem()
 	router := initRouter()
 
-	if _, err := actorSystem.ActorOf(nexusInstance.Actor()); err != nil {
+	if _, err := nexusInstance.Inject(actorSystem); err != nil {
 		panic(err)
 	}
 
@@ -42,7 +42,9 @@ func main() {
 			return
 		}
 
-		session := session.NewSession(sessionId, ws)
+		session := session.NewSession(sessionId, ws, map[string]any{
+			"nickname": c.Query("nickname"),
+		})
 		nexusInstance.TakeoverSession(session)
 	})
 

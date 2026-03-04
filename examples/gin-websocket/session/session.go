@@ -9,13 +9,15 @@ import (
 )
 
 var (
-	_ nexus.Session = (*Session)(nil)
+	_ nexus.Session         = (*Session)(nil)
+	_ nexus.MetadataSession = (*Session)(nil)
 )
 
-func NewSession(sessionId string, conn *websocket.Conn) *Session {
+func NewSession(sessionId string, conn *websocket.Conn, metadata map[string]any) *Session {
 	return &Session{
 		sessionId: sessionId,
 		conn:      conn,
+		metadata:  metadata,
 	}
 }
 
@@ -23,6 +25,7 @@ type Session struct {
 	sessionId string
 	conn      *websocket.Conn
 	closed    atomic.Bool
+	metadata  map[string]any
 }
 
 func (s *Session) Close() error {
@@ -52,4 +55,8 @@ func (s *Session) Read(p []byte) (n int, err error) {
 
 func (s *Session) Write(p []byte) (n int, err error) {
 	return len(p), s.conn.WriteMessage(websocket.TextMessage, p)
+}
+
+func (s *Session) Metadata() map[string]any {
+	return s.metadata
 }

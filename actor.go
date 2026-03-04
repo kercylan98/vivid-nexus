@@ -47,10 +47,19 @@ type Actor struct {
 	provider    SessionActorProvider
 	sessions    map[string]*sessionInfo // sessionId -> sessionInfo，用于替换同 id 会话与清理
 	sessionLock sync.RWMutex            // 用于保护 sessions 的读写操作
+	selfRef     vivid.ActorRef          // 自身 ActorRef，用于在 Inject 时返回
+	injectOnce  sync.Once               // 用于确保 Inject 只执行一次
 }
 
-func (n *Actor) Actor() vivid.Actor {
-	return n
+func (n *Actor) Inject(system vivid.ActorSystem, options ...vivid.ActorOption) (ref vivid.ActorRef, err error) {
+	n.injectOnce.Do(func() {
+		ref, err = system.ActorOf(n, options...)
+		if err != nil {
+			return
+		}
+		n.selfRef = ref
+	})
+	return
 }
 
 func (n *Actor) FixedOptions(ctx vivid.FixedOptionContext) []vivid.ActorOption {
